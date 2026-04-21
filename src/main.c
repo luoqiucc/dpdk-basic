@@ -14,6 +14,7 @@
 #include <rte_ethdev.h>
 #include <rte_malloc.h>
 
+#define MBUF_BUF_SIZE 9216
 #define MEMPOOL_CACHE_SIZE 256
 #define MAX_PKT_BURST 32
 #define RX_DESC_DEFAULT 1024
@@ -26,7 +27,9 @@ static struct rte_eth_conf port_conf = {
     .txmode = {
         .mq_mode = RTE_ETH_MQ_TX_NONE,
     },
-};
+    .rxmode = {
+        .max_lro_pkt_size = MBUF_BUF_SIZE,
+    }};
 static struct rte_ether_addr app_ports_eth_addr[RTE_MAX_ETHPORTS];
 struct __rte_cache_aligned app_port_statistics
 {
@@ -70,7 +73,7 @@ static void app_init(int argc, char **argv)
 
     app_pktmbuf_pool = rte_pktmbuf_pool_create(
         "mbuf_pool", nb_mbufs,
-        MEMPOOL_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE,
+        MEMPOOL_CACHE_SIZE, 0, MBUF_BUF_SIZE,
         rte_socket_id());
     if (app_pktmbuf_pool == NULL)
         rte_exit(EXIT_FAILURE, "Cannot init mbuf pool\n");
