@@ -49,7 +49,7 @@ struct app_config
 };
 struct app_config app_config;
 static volatile bool force_quit;
-uint64_t TSC_1S = 0;
+uint64_t tsc_1s = 0;
 
 /* App Init */
 static void dpdk_init(int argc, char **argv)
@@ -214,7 +214,7 @@ static void load_config()
 static void var_init()
 {
     printf("[INFO] 初始化变量...\n");
-    TSC_1S = rte_get_tsc_hz();
+    tsc_1s = rte_get_tsc_hz();
 }
 
 /* App */
