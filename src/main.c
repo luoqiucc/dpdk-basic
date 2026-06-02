@@ -15,10 +15,13 @@
 #include <rte_ethdev.h>
 #include <rte_malloc.h>
 
+/* Dev */
+
 #define PROMISCUOUS_ON 1 // 是否启用混杂模式
 #define MBUF_BUF_SIZE 9216
 #define MEMPOOL_CACHE_SIZE 256
 #define MAX_PKT_BURST 32
+#define MTU_SIZE 9000 // MTU
 #define RX_DESC_DEFAULT 1024
 #define TX_DESC_DEFAULT 1024
 static uint16_t nb_rxd = RX_DESC_DEFAULT;
@@ -41,17 +44,49 @@ struct __rte_cache_aligned app_port_statistics
 };
 struct app_port_statistics port_statistics[RTE_MAX_ETHPORTS];
 
+/* App config*/
+
 #define APP_CONFIG_FILE "app_config.cfg"
-struct app_config
+struct info
 {
     char *name;
     char *version;
+};
+struct app_config
+{
+    struct info info;
 };
 struct app_config app_config;
 static volatile bool force_quit;
 uint64_t tsc_1s = 0;
 
 /* App Init */
+
+static void load_config()
+{
+    printf("[INFO] 加载配置...\n");
+
+    config_t cfg;
+    config_init(&cfg);
+
+    if (!config_read_file(&cfg, APP_CONFIG_FILE))
+    {
+        fprintf(stderr, "%s:%d: %s\n", config_error_file(&cfg),
+                config_error_line(&cfg), config_error_text(&cfg));
+        config_destroy(&cfg);
+    }
+
+    const char *version;
+    const char *name;
+    config_lookup_string(&cfg, "app_config.version", &version);
+    config_lookup_string(&cfg, "app_config.name", &name);
+
+    app_config.info.name = strdup(name);
+    app_config.info.version = strdup(version);
+
+    config_destroy(&cfg);
+}
+
 static void dpdk_init(int argc, char **argv)
 {
     int ret;
@@ -103,6 +138,12 @@ static void dpdk_init(int argc, char **argv)
         if (ret < 0)
             rte_exit(EXIT_FAILURE,
                      "Cannot configure device: err=%d, port=%u\n",
+                     ret, portid);
+
+        ret = rte_eth_dev_set_mtu(portid, MTU_SIZE);
+        if (ret < 0)
+            rte_exit(EXIT_FAILURE,
+                     "Cannot set mtu: err=%d, port=%u\n",
                      ret, portid);
 
         ret = rte_eth_dev_adjust_nb_rx_tx_desc(portid, &nb_rxd, &nb_txd);
@@ -186,31 +227,6 @@ static void dpdk_init(int argc, char **argv)
     fflush(stdout);
 }
 
-static void load_config()
-{
-    printf("[INFO] 加载配置...\n");
-
-    config_t cfg;
-    config_init(&cfg);
-
-    if (!config_read_file(&cfg, APP_CONFIG_FILE))
-    {
-        fprintf(stderr, "%s:%d: %s\n", config_error_file(&cfg),
-                config_error_line(&cfg), config_error_text(&cfg));
-        config_destroy(&cfg);
-    }
-
-    const char *version;
-    const char *name;
-    config_lookup_string(&cfg, "app_config.version", &version);
-    config_lookup_string(&cfg, "app_config.name", &name);
-
-    app_config.name = strdup(name);
-    app_config.version = strdup(version);
-
-    config_destroy(&cfg);
-}
-
 static void var_init()
 {
     printf("[INFO] 初始化变量...\n");
@@ -218,11 +234,12 @@ static void var_init()
 }
 
 /* App */
+
 static void signal_handler(int signum)
 {
     if (signum == SIGINT || signum == SIGTERM)
     {
-        printf("\nPreparing to exit...\n");
+        printf("\n准备退出...\n");
         force_quit = true;
     }
 }
@@ -234,11 +251,11 @@ int main(int argc, char **argv)
     signal(SIGTERM, signal_handler);
 
     // Init
-    dpdk_init(argc, argv);
     load_config();
+    dpdk_init(argc, argv);
     var_init();
     printf("\n=== %s @%s ===\n",
-           app_config.name, app_config.version);
+           app_config.info.name, app_config.info.version);
 
     // Start
 
