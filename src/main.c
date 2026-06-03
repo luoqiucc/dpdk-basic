@@ -15,6 +15,13 @@
 #include <rte_ethdev.h>
 #include <rte_malloc.h>
 
+/* Terminal */
+
+#define RED_BOLD "\033[1;31m"
+#define GREEN_BOLD "\033[1;32m"
+#define BOLD_ON "\033[1m"
+#define RESET "\033[0m"
+
 /* Dev */
 
 #define PROMISCUOUS_ON 1 // 是否启用混杂模式
@@ -104,8 +111,9 @@ static void dpdk_init(int argc, char **argv)
     nb_ports = rte_eth_dev_count_avail();
     if (nb_ports == 0)
         rte_exit(EXIT_FAILURE, "No Ethernet ports\n");
+    printf("[INFO] 可用端口数量: %d 个\n", nb_ports);
 
-    nb_lcores = 2;
+    nb_lcores = 4;
     nb_mbufs =
         RTE_MAX(nb_ports * (nb_rxd + nb_txd + MAX_PKT_BURST + nb_lcores * MEMPOOL_CACHE_SIZE),
                 8192U);
@@ -254,7 +262,7 @@ int main(int argc, char **argv)
     load_config();
     dpdk_init(argc, argv);
     var_init();
-    printf("\n=== %s @%s ===\n",
+    printf(GREEN_BOLD "\n>>> %s @%s\n" RESET,
            app_config.info.name, app_config.info.version);
 
     // Start

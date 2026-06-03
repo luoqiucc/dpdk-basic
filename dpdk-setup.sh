@@ -12,6 +12,8 @@ sudo dpdk-hugepages.py -p 1G --setup 2G
 echo "绑定设备到dpdk驱动..."
 sudo dpdk-devbind.py --bind=vfio-pci 0000:01:00.0 --force
 sudo dpdk-devbind.py --bind=vfio-pci 0000:01:00.1 --force
+sudo dpdk-devbind.py --bind=vfio-pci 0000:04:00.0 --force
+sudo dpdk-devbind.py --bind=vfio-pci 0000:04:00.1 --force
 
 # 输出设备状态
 sudo dpdk-devbind.py --status-dev net
